@@ -15,6 +15,9 @@ import org.apache.commons.lang.StringUtils;
  *  then reduces by ten units.
  */
 public class KarnafimActor extends UntypedActor {
+    public enum LaunchStage {
+        BuildPath, DetectMaxLimits, OptimumLaunch
+    };
     private int TURN_STATE_THRESHOLD = 300;
     TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
 
@@ -24,6 +27,7 @@ public class KarnafimActor extends UntypedActor {
     private int maxPower = 180; // Max for this phase;
     private boolean probing = false;
     private FloatingHistory gyrozHistory = new FloatingHistory(5);
+    private LaunchStage stage = BuildPath;
 
     /**
      * @param pilotActor The central pilot actor
@@ -44,7 +48,19 @@ public class KarnafimActor extends UntypedActor {
 
     @Override
     public void onReceive(Object message) throws Exception {
+        switch(stage) {
+            case BuildPath:
+                onReceive_BuildPath(message);
+                break;
+            case DetectMaxLimits:
+                break;
+            case OptimumLaunch:
+                break;
+        }
 
+    }
+
+    private void onReceive_BuildPath(Object message) throws Exception {
         if ( message instanceof SensorEvent ) {
             handleSensorEvent((SensorEvent) message);
 
