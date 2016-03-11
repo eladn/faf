@@ -3,6 +3,7 @@ package com.zuehlke.carrera.javapilot.akka;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
+import com.zuehlke.carrera.javapilot.Utils.TurnStateRecognizer;
 import com.zuehlke.carrera.relayapi.messages.PenaltyMessage;
 import com.zuehlke.carrera.relayapi.messages.RaceStartMessage;
 import com.zuehlke.carrera.relayapi.messages.SensorEvent;
@@ -14,13 +15,15 @@ import org.apache.commons.lang.StringUtils;
  *  then reduces by ten units.
  */
 public class KarnafimActor extends UntypedActor {
+    private int TURN_STATE_THRESHOLD = 300;
+    TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
 
     private final ActorRef kobayashi;
-    private double currentPower = 0;
+    private double currentPower = 200;
     private long lastIncrease = 0;
     private int maxPower = 180; // Max for this phase;
-    private boolean probing = true;
-    private FloatingHistory gyrozHistory = new FloatingHistory(8);
+    private boolean probing = false;
+    private FloatingHistory gyrozHistory = new FloatingHistory(5);
 
     /**
      * @param pilotActor The central pilot actor
@@ -57,11 +60,12 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private void handleRaceStart() {
-        currentPower = 0;
+        currentPower = 200;
         lastIncrease = 0;
         maxPower = 180; // Max for this phase;
-        probing = true;
-        gyrozHistory = new FloatingHistory(8);
+        probing = false;
+        gyrozHistory = new FloatingHistory(5);
+        turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
     }
 
     private void handlePenaltyMessage() {
@@ -78,7 +82,16 @@ public class KarnafimActor extends UntypedActor {
     private void handleSensorEvent(SensorEvent message) {
 
         double gyrz = gyrozHistory.shift(message.getG()[2]);
-         show ((int)gyrz);
+        double avg = gyrozHistory.currentMean();
+        if(turnStateRecognizer.newInput(avg)){
+            System.out.println(turnStateRecognizer.getLastStateDuration());
+            System.out.println(" ");
+            System.out.println(turnStateRecognizer.getCurrentTurnState());
+
+        }
+
+        show ((int)gyrozHistory.currentMean());
+
 
         if (probing) {
             if (iAmStillStanding()) {
