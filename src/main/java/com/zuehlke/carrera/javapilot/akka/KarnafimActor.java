@@ -13,7 +13,7 @@ import org.apache.commons.lang.StringUtils;
  *  this logic node increases the power level by 10 units per 0.5 second until it receives a penalty
  *  then reduces by ten units.
  */
-public class PowerUpUntilPenalty extends UntypedActor {
+public class KarnafimActor extends UntypedActor {
 
     private final ActorRef kobayashi;
     private double currentPower = 0;
@@ -29,10 +29,10 @@ public class PowerUpUntilPenalty extends UntypedActor {
      */
     public static Props props( ActorRef pilotActor, int duration ) {
         return Props.create(
-                PowerUpUntilPenalty.class, () -> new PowerUpUntilPenalty(pilotActor, duration ));
+                KarnafimActor.class, () -> new KarnafimActor(pilotActor, duration ));
     }
     private final int duration;
-    public PowerUpUntilPenalty(ActorRef pilotActor, int duration) {
+    public KarnafimActor(ActorRef pilotActor, int duration) {
         lastIncrease = System.currentTimeMillis();
         this.kobayashi = pilotActor;
         this.duration = duration;

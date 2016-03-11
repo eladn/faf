@@ -31,7 +31,7 @@ public class JavaPilotActor extends UntypedActor {
     public JavaPilotActor(PilotProperties properties ) {
 
         this.properties = properties;
-        strategy = getContext().actorOf(PowerUpUntilPenalty.props(getSelf(), 1500));
+        strategy = getContext().actorOf(KarnafimActor.props(getSelf(), 1500));
         recorder = getContext().actorOf(RaceRecorderActor.props(getSelf()));
     }
 
@@ -195,7 +195,7 @@ public class JavaPilotActor extends UntypedActor {
     }
 
     private void handleRaceStart() {
-        strategy = getContext().actorOf(PowerUpUntilPenalty.props(getSelf(), 1500));
+        strategy = getContext().actorOf(KarnafimActor.props(getSelf(), 1500));
         long now = System.currentTimeMillis();
         LOGGER.info("received race start at " + new LocalDateTime(now).toString());
     }
