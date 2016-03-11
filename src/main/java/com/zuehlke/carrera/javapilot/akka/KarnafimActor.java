@@ -100,10 +100,10 @@ public class KarnafimActor extends UntypedActor {
         double gyrz = gyrozHistory.shift(message.getG()[2]);
         double avg = gyrozHistory.currentMean();
         if(turnStateRecognizer.newInput(avg)){
-            System.out.println(turnStateRecognizer.getLastStateDuration());
-            System.out.println(" ");
-            System.out.println(turnStateRecognizer.getCurrentTurnState());
-
+            System.out.print(turnStateRecognizer.getLastStateDuration());
+            System.out.print(" ---------------------------------------------------=======");
+            System.out.print(turnStateRecognizer.getCurrentTurnState());
+            System.out.println("======--------------------------------------------------------");
         }
 
         show ((int)gyrozHistory.currentMean());
