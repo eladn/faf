@@ -13,8 +13,6 @@ public class PathRecognizer extends Path {
     }
 
     public boolean setNextState(TurnStateRecognizer.TurnState turnState){
-        System.out.println("TrackState = " +  track.getSegment(currentState).turnState + ", SensorState = " + turnState);
-
         if(turnState != track.getSegment(currentState).turnState){
             System.out.println("[INFO} WE LOST THE TRACK !!!!");
             return false;
@@ -30,6 +28,18 @@ public class PathRecognizer extends Path {
 
     public Segment getCurrentStateSegment(){
         return track.getSegment(currentState);
+    }
+
+    public String toString(){
+        String str = "";
+        for(int i=0; i<track.getSegmentsSize(); ++i){
+            String delim = " ";
+            if(i==currentState){
+                delim="*";
+            }
+            str += delim + track.getSegment(i).getTurnState().toString() + delim;
+        }
+        return str;
     }
 
 

@@ -24,7 +24,7 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private int TURN_STATE_THRESHOLD = 300;
-    private int FLOATING_HISTORY = 3;
+    private int FLOATING_HISTORY = 5;
     private int INIT_POWER = 105;
 
     TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
@@ -114,12 +114,15 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private void handleSensorEvent_BuildPath(SensorEvent message) {
+//        show2 ((int)gyrozHistory.currentMean(), (int)gyrozHistory.currentStDev());
 
         double gyrz = gyrozHistory.shift(message.getG()[2]);
         double avg = gyrozHistory.currentMean();
         if(turnStateRecognizer.newInput(avg)){
-            if(track.getSegmentsSize()>0){
+            if(track.getSegmentsSize()>0){//initClocks
                 track.setLastSegmentSharpness(turnStateRecognizer.getLastPeak());
+                track.setLastSegmentInitDuraion(turnStateRecognizer.getLastStateDuration());
+                track.setLastSegmentClockCounter(turnStateRecognizer.getLastStateClockCounter());
             }
             track.addSegment(turnStateRecognizer.getCurrentTurnState());
 //            System.out.print(turnStateRecognizer.getLastStateDuration());
@@ -174,6 +177,8 @@ public class KarnafimActor extends UntypedActor {
     }
     boolean isFirst=true;
     private void handleSensorEvent_Optimizer(SensorEvent message) {
+        show2 ((int)gyrozHistory.currentMean(), (int)gyrozHistory.currentStDev());
+
         if(isFirst){
             handleNewSegment(pathRecognizer.getCurrentStateSegment());
             isFirst=false;
@@ -182,13 +187,12 @@ public class KarnafimActor extends UntypedActor {
         double avg = gyrozHistory.currentMean();
         if(turnStateRecognizer.newInput(avg)){
             // state changed
+            System.out.println(pathRecognizer.toString() + " || SensorState = " + turnStateRecognizer.getCurrentTurnState());
             pathRecognizer.setNextState(turnStateRecognizer.getCurrentTurnState());
             handleNewSegment(pathRecognizer.getCurrentStateSegment());
 //            System.out.print(turnStateRecognizer.getLastStateDuration());
 //            System.out.print(turnStateRecognizer.getCurrentTurnState() + " ---------------------------------------------------=============--------------------------------------------------------");
         }
-//        show ((int)gyrozHistory.currentMean());
-
         if((lastThrottleStart + lastThrottleInterval) < System.currentTimeMillis()) {
             // If I exceeded throttle time, break!
             kobayashi.tell(new PowerAction((int)brakepower), getSelf());
@@ -214,7 +218,7 @@ public class KarnafimActor extends UntypedActor {
             oldest_unclosed = seg;
             int throttle_time = seg.getThrottleTime(this.previousVelocity);
             int throttle_power = seg.get_max_power();
-            System.out.println("HANDLE NEW SEGMENT:\t"+"power="+throttle_power+"; time="+throttle_time);
+//            System.out.println("HANDLE NEW SEGMENT:\t"+"power="+throttle_power+"; time="+throttle_time);
             accelerate(throttle_power, throttle_time);
         } else {
         }
@@ -242,6 +246,13 @@ public class KarnafimActor extends UntypedActor {
     private void show(int gyr2) {
         int scale = 120 * (gyr2 - (-10000) ) / 20000;
         System.out.println(StringUtils.repeat(" ", scale) + gyr2);
+    }
+
+    private void show2(int gyr2, int var2) {
+        int scale = 120 * (gyr2 - (-10000) ) / 20000;
+        System.out.print(StringUtils.repeat(" ", scale) + gyr2 + ", " + var2);
+        if(var2<3) System.out.print("***");
+        System.out.println();
     }
 
 
