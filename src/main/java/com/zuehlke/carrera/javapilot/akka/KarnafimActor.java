@@ -25,7 +25,7 @@ public class KarnafimActor extends UntypedActor {
 
     private int TURN_STATE_THRESHOLD = 300;
     private int FLOATING_HISTORY = 3;
-    private int INIT_POWER = 120;
+    private int INIT_POWER = 105;
 
     TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
     Track track = new Track();
@@ -39,9 +39,9 @@ public class KarnafimActor extends UntypedActor {
     private double currentPower = 100;
     private long lastIncrease = 0;
     private boolean stopped = false;
-    private double breakPower = 0;
+    private double brakepower = 95;
     private double fullThrottle = 200;
-    private int maxPower = 180; // Max for this phase;
+    private int maxPower = 150; // Max for this phase;
 
     private long lastThrottleStart = System.currentTimeMillis();
     private int lastThrottleInterval = 500;
@@ -151,10 +151,12 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private void handleVelocityMessage_Optimizer(VelocityMessage message) {
+        System.out.println("SPEED:\t"+message.getVelocity());
         //Save velocity
         previousVelocity = message.getVelocity();
         //Record new data
         if (oldest_unclosed != null) {
+            System.out.println("##############################################################################");
             oldest_unclosed.recordNewData(lastThrottleInterval, previousVelocity, stopped);
             last_closed_segment = oldest_unclosed;
             oldest_unclosed = null;
@@ -163,6 +165,7 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private void handlePenaltyMessage_Optimizer(PenaltyMessage msg) {
+        System.out.println("******** PENALTY *********");
         if (oldest_unclosed != null){
             oldest_unclosed.penalize(msg);
         } else if (last_closed_segment!=null){
@@ -188,7 +191,7 @@ public class KarnafimActor extends UntypedActor {
 
         if((lastThrottleStart + lastThrottleInterval) < System.currentTimeMillis()) {
             // If I exceeded throttle time, break!
-            kobayashi.tell(new PowerAction((int)breakPower), getSelf());
+            kobayashi.tell(new PowerAction((int)brakepower), getSelf());
         }
         if (iAmStillStanding()) {
             kobayashi.tell(new PowerAction((int)fullThrottle), getSelf());
@@ -204,6 +207,9 @@ public class KarnafimActor extends UntypedActor {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void handleNewSegment(Segment seg) {
+        System.out.println("TOP_SPEED:\t"+seg.getTopSpeed()+"     TARGET_SPEED:\t"+seg.getTargetSpeed());
+        System.out.println("STEP:\t"+seg.getStep());
+
         if (oldest_unclosed == null) {
             oldest_unclosed = seg;
             int throttle_time = seg.getThrottleTime(this.previousVelocity);

@@ -13,7 +13,10 @@ public class Segment{
     private static final int max_penalty_speed=300;
     private static final int min_penalty_speed=200;
     private static final int penalties_threshold=2;
+
     private int velocity_step=20;
+    private int min_penalized_time = Integer.MAX_VALUE;
+    private boolean penalized=false;
     private int number_of_penalties=0;
     private double top_speed;
     private double last_speed;
@@ -21,7 +24,7 @@ public class Segment{
     private int max_power;
     private double sharpness;
     private boolean stopped;
-    private int last_throttle_time;
+    private int throttle_time;
     private double target_speed;
     private long initDuration;
     SimpleRegression stats;
@@ -35,7 +38,7 @@ public class Segment{
         sharpness = 0;
         recalcMaxPower();
         stopped=true;
-        last_throttle_time = init_throttle_time;
+        throttle_time = init_throttle_time;
         stats = new SimpleRegression();
     }
 
@@ -50,6 +53,12 @@ public class Segment{
     public double getTopSpeed() {
         return top_speed;
     }
+
+    public int getStep(){
+        return velocity_step;
+    }
+
+    public double getTargetSpeed(){ return target_speed; }
 
     public double getSharpness() {
         return sharpness;
@@ -68,22 +77,31 @@ public class Segment{
         recalcMaxPower();
     }
     public void recordNewData(int throttleTime, double velocityD, boolean stopped){
-        this.stopped=stopped;
-        target_speed=top_speed+velocity_step;
+
+        if(!penalized){
+            throttle_time+=100;
+        } else {
+            if(throttle_time<0.75*min_penalized_time){
+            throttle_time+=Math.min(25,(min_penalized_time-throttle_time)/4);
+        }
+        }
+
+        top_speed = Math.min(target_speed,max_penalty_speed);
+        target_speed=Math.min(top_speed+velocity_step,max_penalty_speed);
         if(!stopped) {
             stats.addData(throttleTime, velocityD);
         }
     }
 
-    public int getThrottleTime(double last_recorded_velocity){
-        double targetDelta = target_speed-last_recorded_velocity;
-        double slope = stats.getSlope();
-        double intercept = stats.getIntercept();
-        int timeByStat = 0;
-        if(stats.getN()>=2)
-            timeByStat = (int) ((targetDelta - intercept) / slope);
-        last_throttle_time = (stopped || stats.getN()<2) ? Math.max(timeByStat,2*last_throttle_time) : timeByStat;
-        return Math.max(500,last_throttle_time);
+    public int getThrottleTime(double last_recorded_velocity) {
+        //double targetDelta = target_speed - last_recorded_velocity;
+        //double slope = stats.getSlope();
+        //double intercept = stats.getIntercept();
+        //int timeByStat = 0;
+       // if (stats.getN() >= 2)
+        //    timeByStat = (int) ((targetDelta - intercept) / slope);
+       // throttle_time = (stopped || stats.getN() < 2) ? Math.max(timeByStat, throttle_time) : timeByStat;
+        return throttle_time;
     }
 
     public int get_max_power(){
@@ -91,13 +109,15 @@ public class Segment{
         //return max_power;
     }
 
-    public void penalize(PenaltyMessage msg){
+    public void penalize(PenaltyMessage msg) {
+        penalized=true;
         number_of_penalties++;
-        velocity_step=0;
-        target_speed=0.95*msg.getSpeedLimit();
-        top_speed=target_speed;
+        velocity_step = 0;
+        target_speed = 0.95 * msg.getSpeedLimit();
+        top_speed = target_speed;
+        min_penalized_time=throttle_time;
+        throttle_time-=Math.min(throttle_time,(msg.getActualSpeed()-msg.getSpeedLimit())*20);
     }
-
 
 
     @Override
