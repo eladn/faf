@@ -48,11 +48,12 @@ public class TurnStateRecognizer {
         }
 
         public long getValidThreshold() {
-            return (currentTurnState != TurnState.Straight) ? MIN_TURN_TIME : MIN_STRAIGHT_TIME;
+            return (currentTurnState != TurnState.Straight) ? MIN_TURN_CLOCKS : MIN_STRAIGHT_CLOCKS;
         }
 
         public boolean isValidTime() {
-            return (System.currentTimeMillis() - this.lastStateTimestamp > getValidThreshold());
+//            System.out.print("    " + getValidThreshold() + " < " + this.currentClockCounter + " = " + (currentClockCounter > getValidThreshold()));
+            return (currentClockCounter > getValidThreshold());
         }
 
         public History clone() {
@@ -66,6 +67,9 @@ public class TurnStateRecognizer {
 
     private final long MIN_STRAIGHT_TIME = 85;
     private final long MIN_TURN_TIME = 50;
+
+    private final long MIN_STRAIGHT_CLOCKS = 7;
+    private final long MIN_TURN_CLOCKS = 3;
 
     //private boolean maybeStraight = false; //remove
 
@@ -91,26 +95,35 @@ public class TurnStateRecognizer {
         if(absAvg > stats.currentPeakMax) stats.currentPeakMax = absAvg;
         if(maybeNewStats != null && absAvg > maybeNewStats.currentPeakMax) maybeNewStats.currentPeakMax = absAvg;
 
-        TurnState sensor = (avg > TURN_STATE_THRESHOLD ? TurnState.Left : (avg < -TURN_STATE_THRESHOLD ? TurnState.Right : TurnState.Straight));
+        TurnState sensor = (avg > TURN_STATE_THRESHOLD ? TurnState.Right : (avg < -TURN_STATE_THRESHOLD ? TurnState.Left : TurnState.Straight));
+        System.out.print("Sensor: " + sensor + "    " + "current_state: " + stats.currentTurnState + "     ");
 
-        if (sensor != stats.currentTurnState) {
-            if (maybeNewStats != null && sensor == maybeNewStats.currentTurnState) {
+        if (maybeNewStats != null) {
+            if (sensor == maybeNewStats.currentTurnState) {
                 // check if already valid new state
                 if(maybeNewStats.isValidTime()) { // really straight
                     stats = maybeNewStats;
                     maybeNewStats = null;
                     return true;
                 }
-            } else if (maybeNewStats != null && sensor != maybeNewStats.currentTurnState) {
-                maybeNewStats = stats.clone();
-                maybeNewStats.currentTurnState = sensor;
-                maybeNewStats.updateTime(absAvg);
             } else {
-                maybeNewStats = stats.clone();
-                maybeNewStats.currentTurnState = sensor;
-                maybeNewStats.updateTime(absAvg);
+                if (sensor == stats.currentTurnState) {
+                    maybeNewStats = null;
+                } else {
+                    System.out.print("set maybe: " + sensor.toString() + "   [delete old maybe set to " + maybeNewStats.currentTurnState + "]");
+                    maybeNewStats = stats.clone();
+                    maybeNewStats.currentTurnState = sensor;
+                    maybeNewStats.updateTime(absAvg);
+                }
             }
+        } else if (sensor != stats.currentTurnState) { // maybeNewStats == null
+            System.out.print("set maybe: " + sensor.toString());
+            maybeNewStats = stats.clone();
+            maybeNewStats.currentTurnState = sensor;
+            maybeNewStats.updateTime(absAvg);
         }
+
+
 
 
 /*

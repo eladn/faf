@@ -24,7 +24,7 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private int TURN_STATE_THRESHOLD = 300;
-    private int FLOATING_HISTORY = 5;
+    private int FLOATING_HISTORY = 1;
     private int INIT_POWER = 105;
 
     TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
@@ -114,22 +114,20 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private void handleSensorEvent_BuildPath(SensorEvent message) {
-        //show2 ((int)gyrozHistory.currentMean(), (int)gyrozHistory.currentStDev());
-        show ((int)gyrozHistory.currentMean());
-
-        double gyrz = gyrozHistory.shift(message.getG()[2]);
+        gyrozHistory.shift(message.getG()[2]); //push to avg history
         double avg = gyrozHistory.currentMean();
         if(turnStateRecognizer.newInput(avg)){
-            if(track.getSegmentsSize()>0){//initClocks
+            if(track.getSegmentsSize()>0){//mikre kaze zain athala
                 track.setLastSegmentSharpness(turnStateRecognizer.getLastPeak());
                 track.setLastSegmentInitDuraion(turnStateRecognizer.getLastStateDuration());
                 track.setLastSegmentClockCounter(turnStateRecognizer.getLastStateClockCounter());
             }
             track.addSegment(turnStateRecognizer.getCurrentTurnState());
-            System.out.print(turnStateRecognizer.getLastStateDuration());
-            System.out.print(turnStateRecognizer.getCurrentTurnState() + " ---------------------------------------------------=============--------------------------------------------------------");
+//            System.out.print(turnStateRecognizer.getLastStateDuration());
+//            System.out.print(turnStateRecognizer.getCurrentTurnState() + " ---------------------------------------------------=============--------------------------------------------------------");
         }
         kobayashi.tell(new PowerAction((int)INIT_POWER), getSelf());
+        show ((int)gyrozHistory.currentMean());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

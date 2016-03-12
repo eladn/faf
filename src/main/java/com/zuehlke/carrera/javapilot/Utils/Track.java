@@ -36,8 +36,16 @@ public class Track extends Path {
         list.get(list.size()-1).setInitClocks(clocks);
     }
 
+    public String toString() {
+        String str = "";
+        for (int i = 0; i < list.size(); ++i) {
+            str += ((i % 16) + ":" + list.get(i) + ",  ");
+        }
+        return str;
+    }
+
     private boolean checkDoubleCyclicPath() {
-        System.out.println(list.toString());
+        System.out.println(this.toString());
         System.out.println("");
 
         if(list.size()<(MIN_PATH_SIZE*2) || list.size()%2 != 0){
@@ -53,7 +61,6 @@ public class Track extends Path {
             }
         }
 
-        System.out.println(list.toString());
 
         //cut
         int wantedSize = list.size()/2;
@@ -78,7 +85,7 @@ public class Track extends Path {
             segment.setSharpness(1 - segment.getSharpness()/maxSharpness);
         }
 
-        System.out.println(list.toString());
+        System.out.println(this.toString());
         System.out.println(" ");
 
 
