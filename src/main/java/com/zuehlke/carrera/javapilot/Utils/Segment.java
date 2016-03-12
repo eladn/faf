@@ -8,12 +8,11 @@ import org.apache.commons.math3.stat.regression.SimpleRegression;
 public class Segment{
     TurnStateRecognizer.TurnState turnState;
 
-    private static final int power_limit = 180;
     private static final int init_throttle_time=250;
     private static final int max_penalty_speed=300;
     private static final int min_penalty_speed=200;
-    private static final int penalties_threshold=2;
-
+    private static final int MAX_POWER_STRAIGHT=200;
+    private static final int MAX_POWER_CURVE=140;
     private int max_power = 150;
 
 
@@ -117,8 +116,10 @@ public class Segment{
     }
 
     public int get_max_power(){
-        return max_power;
-        //return max_power;
+        if(turnState == TurnStateRecognizer.TurnState.Straight)
+            return MAX_POWER_STRAIGHT;
+        else
+            return MAX_POWER_CURVE;
     }
 
     public void penalize(PenaltyMessage msg) {
@@ -128,7 +129,11 @@ public class Segment{
         target_speed = 0.95 * msg.getSpeedLimit();
         top_speed = target_speed;
         min_penalized_time=throttle_time;
-        throttle_time-=Math.min(throttle_time,(msg.getActualSpeed()-msg.getSpeedLimit())*20);
+        if(turnState == TurnStateRecognizer.TurnState.Straight)
+            throttle_time-=Math.min(throttle_time,(msg.getActualSpeed()-msg.getSpeedLimit())*10);
+        else
+            throttle_time-=Math.min(throttle_time,(msg.getActualSpeed()-msg.getSpeedLimit())*20);
+
     }
 
 
