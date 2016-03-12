@@ -5,20 +5,22 @@ package com.zuehlke.carrera.javapilot.Utils;
  */
 public class PathRecognizer extends Path {
     Track track;
-    int currentState;
+    int currentState, nextState;
 
     public PathRecognizer(Track track){
         this.track = track;
         currentState = 0;
+        nextState = 0;
     }
 
     public boolean setNextState(TurnStateRecognizer.TurnState turnState){
+        currentState = nextState;
         if(turnState != track.getSegment(currentState).turnState){
             System.out.println("[INFO} WE LOST THE TRACK !!!!");
             return false;
         }
 
-        currentState = (currentState + 1) % track.getSegmentsSize();
+        nextState = (currentState + 1) % track.getSegmentsSize();
         return true;
     }
 
