@@ -40,7 +40,7 @@ public class KarnafimActor extends UntypedActor {
     private long lastIncrease = 0;
     private boolean stopped = false;
     private double breakPower = 0;
-    private double fullThrottle = 255;
+    private double fullThrottle = 200;
     private int maxPower = 180; // Max for this phase;
 
     private long lastThrottleStart = System.currentTimeMillis();
@@ -165,13 +165,16 @@ public class KarnafimActor extends UntypedActor {
     private void handlePenaltyMessage_Optimizer(PenaltyMessage msg) {
         if (oldest_unclosed != null){
             oldest_unclosed.penalize(msg);
-        } else {
+        } else if (last_closed_segment!=null){
             last_closed_segment.penalize(msg);
         }
     }
-
+    boolean isFirst=true;
     private void handleSensorEvent_Optimizer(SensorEvent message) {
-
+        if(isFirst){
+            handleNewSegment(pathRecognizer.getCurrentStateSegment());
+            isFirst=false;
+        }
         double gyrz = gyrozHistory.shift(message.getG()[2]);
         double avg = gyrozHistory.currentMean();
         if(turnStateRecognizer.newInput(avg)){
@@ -205,6 +208,7 @@ public class KarnafimActor extends UntypedActor {
             oldest_unclosed = seg;
             int throttle_time = seg.getThrottleTime(this.previousVelocity);
             int throttle_power = seg.get_max_power();
+            System.out.println("HANDLE NEW SEGMENT:\t"+"power="+throttle_power+"; time="+throttle_time);
             accelerate(throttle_power, throttle_time);
         } else {
         }

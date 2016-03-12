@@ -9,7 +9,7 @@ public class Segment{
     TurnStateRecognizer.TurnState turnState;
 
     private static final int power_limit = 180;
-    private static final int init_throttle_time=500;
+    private static final int init_throttle_time=250;
     private static final int max_penalty_speed=300;
     private static final int min_penalty_speed=200;
     private static final int penalties_threshold=2;
@@ -70,7 +70,9 @@ public class Segment{
     public void recordNewData(int throttleTime, double velocityD, boolean stopped){
         this.stopped=stopped;
         target_speed=top_speed+velocity_step;
-        stats.addData(throttleTime,velocityD);
+        if(!stopped) {
+            stats.addData(throttleTime, velocityD);
+        }
     }
 
     public int getThrottleTime(double last_recorded_velocity){
@@ -80,12 +82,13 @@ public class Segment{
         int timeByStat = 0;
         if(stats.getN()>=2)
             timeByStat = (int) ((targetDelta - intercept) / slope);
-        last_throttle_time = (stopped && stats.getN()>=2) ? Math.max(timeByStat,2*last_throttle_time) : timeByStat;
-        return last_throttle_time;
+        last_throttle_time = (stopped || stats.getN()<2) ? Math.max(timeByStat,2*last_throttle_time) : timeByStat;
+        return Math.max(500,last_throttle_time);
     }
 
     public int get_max_power(){
-        return max_power;
+        return 200;
+        //return max_power;
     }
 
     public void penalize(PenaltyMessage msg){
