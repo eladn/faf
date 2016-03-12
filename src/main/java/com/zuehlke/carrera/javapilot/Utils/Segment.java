@@ -24,6 +24,7 @@ public class Segment{
     private int last_throttle_time;
     private double target_speed;
     private long initDuration;
+    private int initClocks;
     SimpleRegression stats;
 
     public Segment(TurnStateRecognizer.TurnState turnState){
@@ -61,6 +62,14 @@ public class Segment{
 
     public void setInitDuration(long initDuration) {
         this.initDuration = initDuration;
+    }
+
+    public void setInitClocks(int initClocks) {
+        this.initClocks = initClocks;
+    }
+
+    public int getInitClocks() {
+        return initClocks;
     }
 
     public void setSharpness(double sharpness) {
@@ -102,6 +111,8 @@ public class Segment{
 
     @Override
     public String toString(){
-        return "\n" + turnState.toString() + ":mp=" + this.max_power + ":shrp=" + this.sharpness;
+//        return "\n" + turnState.toString() + ":mp=" + this.max_power + ":shrp=" + this.sharpness;
+//        return turnState.toString();
+          return turnState.toString() + "(" + this.getInitClocks() + ": " + this.getInitDuration() + ")";
     }
 }

@@ -29,11 +29,19 @@ public class Track extends Path {
     public void setLastSegmentSharpness(double sharpness){
         list.get(list.size()-1).setSharpness(sharpness);
     }
+    public void setLastSegmentInitDuraion(long duraion){
+        list.get(list.size()-1).setInitDuration(duraion);
+    }
+    public void setLastSegmentClockCounter(int clocks){
+        list.get(list.size()-1).setInitClocks(clocks);
+    }
 
     private boolean checkDoubleCyclicPath() {
         if(list.size()<(MIN_PATH_SIZE*2) || list.size()%2 != 0){
             return false;
         }
+
+        System.out.println(list.toString());
 
         for(int i=0; i<list.size()/2; ++i){
             Segment first = list.get(i);
