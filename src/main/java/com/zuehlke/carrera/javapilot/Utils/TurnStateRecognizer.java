@@ -7,7 +7,11 @@ package com.zuehlke.carrera.javapilot.Utils;
 
 public class TurnStateRecognizer {
     public enum TurnState {
-        Right, Left, Straight
+        Right, Left, Straight;
+
+        public String toString() {
+            return (this == Right) ? "R" : (this == Left ? "L" : "S");
+        }
     }
 
     class History {

@@ -114,7 +114,8 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private void handleSensorEvent_BuildPath(SensorEvent message) {
-//        show2 ((int)gyrozHistory.currentMean(), (int)gyrozHistory.currentStDev());
+        //show2 ((int)gyrozHistory.currentMean(), (int)gyrozHistory.currentStDev());
+        show ((int)gyrozHistory.currentMean());
 
         double gyrz = gyrozHistory.shift(message.getG()[2]);
         double avg = gyrozHistory.currentMean();
@@ -125,8 +126,8 @@ public class KarnafimActor extends UntypedActor {
                 track.setLastSegmentClockCounter(turnStateRecognizer.getLastStateClockCounter());
             }
             track.addSegment(turnStateRecognizer.getCurrentTurnState());
-//            System.out.print(turnStateRecognizer.getLastStateDuration());
-//            System.out.print(turnStateRecognizer.getCurrentTurnState() + " ---------------------------------------------------=============--------------------------------------------------------");
+            System.out.print(turnStateRecognizer.getLastStateDuration());
+            System.out.print(turnStateRecognizer.getCurrentTurnState() + " ---------------------------------------------------=============--------------------------------------------------------");
         }
         kobayashi.tell(new PowerAction((int)INIT_POWER), getSelf());
     }

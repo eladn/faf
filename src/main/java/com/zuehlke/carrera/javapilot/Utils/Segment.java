@@ -133,6 +133,6 @@ public class Segment{
     public String toString(){
 //        return "\n" + turnState.toString() + ":mp=" + this.max_power + ":shrp=" + this.sharpness;
 //        return turnState.toString();
-          return turnState.toString() + "(" + this.getInitClocks() + ": " + this.getInitDuration() + ")";
+          return turnState.toString() + ":" + this.getInitDuration() + "";
     }
 }
