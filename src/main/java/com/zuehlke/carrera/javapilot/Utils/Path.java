@@ -28,4 +28,5 @@ public abstract class Path {
         assert(0<=i && i<getSegmentsSize());
         return list.get(i);
     }
+
 }

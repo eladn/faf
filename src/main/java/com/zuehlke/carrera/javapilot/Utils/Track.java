@@ -37,11 +37,13 @@ public class Track extends Path {
     }
 
     private boolean checkDoubleCyclicPath() {
+        System.out.println(list.toString());
+        System.out.println("");
+
         if(list.size()<(MIN_PATH_SIZE*2) || list.size()%2 != 0){
             return false;
         }
 
-        System.out.println(list.toString());
 
         for(int i=0; i<list.size()/2; ++i){
             Segment first = list.get(i);
@@ -79,6 +81,32 @@ public class Track extends Path {
         System.out.println(list.toString());
         System.out.println(" ");
 
+
         return true;
     }
+
+    /*
+        -1 if not, else returns last common index (in Track)
+     */
+    int isOnlySubPath(Path path){
+        int offset = -1;
+        for(int i=0; i<this.getSegmentsSize(); ++i){
+            boolean match = true;
+            for(int j=0; j<path.getSegmentsSize(); ++j){
+                if(path.getSegment(j).getTurnState() != this.getSegment(i).getTurnState()){
+                    match = false;
+                    break;
+                }
+            }
+            if(!match) continue;
+            if (offset > -1) { // found twice. not only one
+                return -1;
+            }
+            offset = (i + path.getSegmentsSize()) % this.getSegmentsSize();
+        }
+
+        return offset;
+    }
 }
+
+//12195634
