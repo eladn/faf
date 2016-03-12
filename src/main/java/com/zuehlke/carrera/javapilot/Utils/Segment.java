@@ -14,6 +14,9 @@ public class Segment{
     private static final int min_penalty_speed=200;
     private static final int penalties_threshold=2;
 
+    private int max_power = 150;
+
+
     private int velocity_step=20;
     private int min_penalized_time = Integer.MAX_VALUE;
     private boolean penalized=false;
@@ -21,7 +24,6 @@ public class Segment{
     private double top_speed;
     private double last_speed;
     private double current_penalty_speed;
-    private int max_power;
     private double sharpness;
     private boolean stopped;
     private int throttle_time;
@@ -44,7 +46,8 @@ public class Segment{
     }
 
     private void recalcMaxPower() {
-        max_power = (int)(power_limit * (0.5 + 0.5 * sharpness));
+        //max_power = (int)(power_limit * (0.5 + 0.5 * sharpness));
+        max_power=150;
     }
 
     public TurnStateRecognizer.TurnState getTurnState() {
@@ -90,7 +93,7 @@ public class Segment{
         if(!penalized){
             throttle_time+=100;
         } else {
-            if(throttle_time<0.75*min_penalized_time){
+            if(throttle_time<0.7*min_penalized_time){
             throttle_time+=Math.min(25,(min_penalized_time-throttle_time)/4);
         }
         }
@@ -114,7 +117,7 @@ public class Segment{
     }
 
     public int get_max_power(){
-        return 200;
+        return max_power;
         //return max_power;
     }
 
