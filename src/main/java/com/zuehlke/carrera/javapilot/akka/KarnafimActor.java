@@ -3,10 +3,14 @@ package com.zuehlke.carrera.javapilot.akka;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
+import com.zuehlke.carrera.javapilot.Utils.PathRecognizer;
+import com.zuehlke.carrera.javapilot.Utils.Segment;
+import com.zuehlke.carrera.javapilot.Utils.Track;
 import com.zuehlke.carrera.javapilot.Utils.TurnStateRecognizer;
 import com.zuehlke.carrera.relayapi.messages.PenaltyMessage;
 import com.zuehlke.carrera.relayapi.messages.RaceStartMessage;
 import com.zuehlke.carrera.relayapi.messages.SensorEvent;
+import com.zuehlke.carrera.relayapi.messages.VelocityMessage;
 import com.zuehlke.carrera.timeseries.FloatingHistory;
 import org.apache.commons.lang.StringUtils;
 
@@ -17,23 +21,33 @@ import org.apache.commons.lang.StringUtils;
 public class KarnafimActor extends UntypedActor {
     public enum LaunchStage {
         BuildPath, DetectMaxLimits, OptimumLaunch
-    };
+    }
+
     private int TURN_STATE_THRESHOLD = 300;
+    private int FLOATING_HISTORY = 3;
+    private int INIT_POWER = 120;
+
     TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
-
+    Track track = new Track();
+    PathRecognizer pathRecognizer = null;
+    private FloatingHistory gyrozHistory = new FloatingHistory(FLOATING_HISTORY);
     private final ActorRef kobayashi;
-    private double currentPower = 200;
-    private long lastIncrease = 0;
-    private int maxPower = 180; // Max for this phase;
-    private boolean probing = false;
-    private FloatingHistory gyrozHistory = new FloatingHistory(5);
-    private LaunchStage stage = BuildPath;
+    private LaunchStage stage = LaunchStage.BuildPath;
 
-    /**
-     * @param pilotActor The central pilot actor
-     * @param duration the period between two increases
-     * @return the actor props
-     */
+    private Segment oldest_unclosed = null;
+    private Segment last_closed_segment = null;
+    private double currentPower = 100;
+    private long lastIncrease = 0;
+    private boolean stopped = false;
+    private double breakPower = 0;
+    private double fullThrottle = 255;
+    private int maxPower = 180; // Max for this phase;
+
+    private long lastThrottleStart = System.currentTimeMillis();
+    private int lastThrottleInterval = 500;
+    private double previousVelocity = 0;
+
+
     public static Props props( ActorRef pilotActor, int duration ) {
         return Props.create(
                 KarnafimActor.class, () -> new KarnafimActor(pilotActor, duration ));
@@ -51,75 +65,160 @@ public class KarnafimActor extends UntypedActor {
         switch(stage) {
             case BuildPath:
                 onReceive_BuildPath(message);
-                break;
-            case DetectMaxLimits:
+                if (track.isReady()){
+                    stage = LaunchStage.OptimumLaunch;
+                    pathRecognizer = new PathRecognizer(track);
+                }
                 break;
             case OptimumLaunch:
+                onReceive_Optimizer(message);
                 break;
         }
 
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////// BuildPath Handlers /////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     private void onReceive_BuildPath(Object message) throws Exception {
         if ( message instanceof SensorEvent ) {
-            handleSensorEvent((SensorEvent) message);
-
+            handleSensorEvent_BuildPath((SensorEvent) message);
         } else if ( message instanceof PenaltyMessage) {
-            handlePenaltyMessage ();
-
+            handlePenaltyMessage_BuildPath();
         } else if ( message instanceof RaceStartMessage) {
-            handleRaceStart();
-
+            handleRaceStart_BuildPath();
+        } else if (message instanceof VelocityMessage) {
+            handleVelocityMessage_BuildPath((VelocityMessage) message);
         } else {
             unhandled(message);
         }
     }
 
-    private void handleRaceStart() {
-        currentPower = 200;
+    private void handleRaceStart_BuildPath() {
+        currentPower = INIT_POWER;
         lastIncrease = 0;
         maxPower = 180; // Max for this phase;
-        probing = false;
-        gyrozHistory = new FloatingHistory(5);
+        gyrozHistory = new FloatingHistory(FLOATING_HISTORY);
         turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
+        track = new Track();
     }
 
-    private void handlePenaltyMessage() {
+    private void handleVelocityMessage_BuildPath(VelocityMessage message) {
+//        System.out.print("VELOCITY = " + message.getVelocity());
+    }
+
+    private void handlePenaltyMessage_BuildPath() {
         currentPower -= 10;
         kobayashi.tell(new PowerAction((int)currentPower), getSelf());
-        probing = false;
     }
 
-    /**
-     * Strategy: increase quickly when standing still to overcome haptic friction
-     * then increase slowly. Probing phase will be ended by the first penalty
-     * @param message the sensor event coming in
-     */
-    private void handleSensorEvent(SensorEvent message) {
+    private void handleSensorEvent_BuildPath(SensorEvent message) {
 
         double gyrz = gyrozHistory.shift(message.getG()[2]);
         double avg = gyrozHistory.currentMean();
         if(turnStateRecognizer.newInput(avg)){
-            System.out.print(turnStateRecognizer.getLastStateDuration());
-            System.out.print(" ---------------------------------------------------=======");
-            System.out.print(turnStateRecognizer.getCurrentTurnState());
-            System.out.println("======--------------------------------------------------------");
-        }
-
-        show ((int)gyrozHistory.currentMean());
-
-
-        if (probing) {
-            if (iAmStillStanding()) {
-                increase(0.5);
-            } else if (message.getTimeStamp() > lastIncrease + duration) {
-                lastIncrease = message.getTimeStamp();
-                increase(3);
+            if(track.getSegmentsSize()>0){
+                track.setLastSegmentSharpness(turnStateRecognizer.getLastPeak());
             }
+            track.addSegment(turnStateRecognizer.getCurrentTurnState());
+//            System.out.print(turnStateRecognizer.getLastStateDuration());
+//            System.out.print(turnStateRecognizer.getCurrentTurnState() + " ---------------------------------------------------=============--------------------------------------------------------");
         }
-
-        kobayashi.tell(new PowerAction((int)currentPower), getSelf());
+        kobayashi.tell(new PowerAction((int)INIT_POWER), getSelf());
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////// OptimumLaunch Handlers /////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void onReceive_Optimizer(Object message) throws Exception {
+        if ( message instanceof SensorEvent ) {
+            handleSensorEvent_Optimizer((SensorEvent) message);
+        } else if ( message instanceof PenaltyMessage) {
+            handlePenaltyMessage_Optimizer((PenaltyMessage)message);
+        } else if ( message instanceof RaceStartMessage) {
+            handleRaceStart_Optimizer();
+        } else if (message instanceof VelocityMessage) {
+            handleVelocityMessage_Optimizer((VelocityMessage) message);
+        } else {
+            unhandled(message);
+        }
+    }
+
+    private void handleRaceStart_Optimizer() {
+        System.out.println("[START] from Optimizer");
+    }
+
+    private void handleVelocityMessage_Optimizer(VelocityMessage message) {
+        //Save velocity
+        previousVelocity = message.getVelocity();
+        //Record new data
+        if (oldest_unclosed != null) {
+            oldest_unclosed.recordNewData(lastThrottleInterval, previousVelocity, stopped);
+            last_closed_segment = oldest_unclosed;
+            oldest_unclosed = null;
+            stopped = false;
+        }
+    }
+
+    private void handlePenaltyMessage_Optimizer(PenaltyMessage msg) {
+        if (oldest_unclosed != null){
+            oldest_unclosed.penalize(msg);
+        } else {
+            last_closed_segment.penalize(msg);
+        }
+    }
+
+    private void handleSensorEvent_Optimizer(SensorEvent message) {
+
+        double gyrz = gyrozHistory.shift(message.getG()[2]);
+        double avg = gyrozHistory.currentMean();
+        if(turnStateRecognizer.newInput(avg)){
+            // state changed
+            pathRecognizer.setNextState(turnStateRecognizer.getCurrentTurnState());
+            handleNewSegment(pathRecognizer.getCurrentStateSegment());
+//            System.out.print(turnStateRecognizer.getLastStateDuration());
+//            System.out.print(turnStateRecognizer.getCurrentTurnState() + " ---------------------------------------------------=============--------------------------------------------------------");
+        }
+//        show ((int)gyrozHistory.currentMean());
+
+        if((lastThrottleStart + lastThrottleInterval) < System.currentTimeMillis()) {
+            // If I exceeded throttle time, break!
+            kobayashi.tell(new PowerAction((int)breakPower), getSelf());
+        }
+        if (iAmStillStanding()) {
+            kobayashi.tell(new PowerAction((int)fullThrottle), getSelf());
+            lastThrottleStart=System.currentTimeMillis();
+            lastThrottleInterval=1250;
+            stopped=true;
+        }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////// adam & ron /////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void handleNewSegment(Segment seg) {
+        if (oldest_unclosed == null) {
+            oldest_unclosed = seg;
+            int throttle_time = seg.getThrottleTime(this.previousVelocity);
+            int throttle_power = seg.get_max_power();
+            accelerate(throttle_power, throttle_time);
+        } else {
+        }
+    }
+
+    private void accelerate(int throttle_power, int throttle_time) {
+        kobayashi.tell(new PowerAction(throttle_power), getSelf());
+        lastThrottleStart = System.currentTimeMillis();
+        lastThrottleInterval = throttle_time;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////// more bullshit //////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private int increase ( double val ) {
         currentPower = Math.min ( currentPower + val, maxPower );

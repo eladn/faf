@@ -15,6 +15,7 @@ public class TurnStateRecognizer {
     private TurnState currentTurnState = TurnState.Straight;
     private long lastStateTimestamp;
     private long lastStateDuration = 0;
+    private double lastPeakMax = 0;
 
     public TurnStateRecognizer(int stateThreshold) {
         TURN_STATE_THRESHOLD = stateThreshold;
@@ -27,18 +28,34 @@ public class TurnStateRecognizer {
      */
     public boolean newInput(double avg) {
         //Right = positive
-        if (avg > TURN_STATE_THRESHOLD && currentTurnState != TurnState.Right) {
-            currentTurnState = TurnState.Right;
-            updateTime();
-            return true;
-        } else if (avg < -TURN_STATE_THRESHOLD && currentTurnState != TurnState.Left){
-            currentTurnState = TurnState.Left;
-            updateTime();
-            return true;
-        } else if (Math.abs(avg) <= TURN_STATE_THRESHOLD && currentTurnState != TurnState.Straight){
-            currentTurnState = TurnState.Straight;
-            updateTime();
-            return true;
+        double absAvg = Math.abs(avg);
+        if (avg > TURN_STATE_THRESHOLD) {
+            if(currentTurnState != TurnState.Right) {
+                currentTurnState = TurnState.Right;
+                updateTime();
+                lastPeakMax = absAvg;
+                return true;
+            } else {
+                if(absAvg > lastPeakMax) lastPeakMax = absAvg;
+            }
+        } else if (avg < -TURN_STATE_THRESHOLD){
+            if(currentTurnState != TurnState.Left) {
+                currentTurnState = TurnState.Left;
+                updateTime();
+                lastPeakMax = absAvg;
+                return true;
+            } else {
+                if(absAvg > lastPeakMax) lastPeakMax = absAvg;
+            }
+        } else if (Math.abs(avg) <= TURN_STATE_THRESHOLD){
+            if(currentTurnState != TurnState.Straight) {
+                currentTurnState = TurnState.Straight;
+                updateTime();
+                lastPeakMax = absAvg;
+                return true;
+            } else {
+                if(absAvg > lastPeakMax) lastPeakMax = absAvg;
+            }
         }
         return false;
     }
@@ -49,6 +66,10 @@ public class TurnStateRecognizer {
 
     public long getLastStateDuration(){
         return lastStateDuration;
+    }
+
+    public double getLastPeak(){
+        return lastPeakMax;
     }
 
     private void updateTime(){
