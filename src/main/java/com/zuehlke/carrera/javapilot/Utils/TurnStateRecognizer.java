@@ -11,6 +11,7 @@ public class TurnStateRecognizer {
     }
 
     class History {
+        public TurnState currentTurnState = TurnState.Straight;
         public long lastStateTimestamp;
         public long lastStateDuration = 0;
         public double currentPeakMax = 0;
@@ -22,6 +23,7 @@ public class TurnStateRecognizer {
             this.lastStateTimestamp = System.currentTimeMillis();
         }
         History(History another) {
+            this.currentTurnState = another.currentTurnState;
             this.lastStateTimestamp = another.lastStateTimestamp;
             this.lastStateDuration = another.lastStateDuration;
             this.currentPeakMax = another.currentPeakMax;
@@ -41,6 +43,14 @@ public class TurnStateRecognizer {
             lastStateTimestamp = System.currentTimeMillis();
         }
 
+        public long getValidThreshold() {
+            return (currentTurnState != TurnState.Straight) ? MIN_TURN_TIME : MIN_STRAIGHT_TIME;
+        }
+
+        public boolean isValidTime() {
+            return (System.currentTimeMillis() - this.lastStateTimestamp > getValidThreshold());
+        }
+
         public History clone() {
             History hist = new History(this);
             return hist;
@@ -49,13 +59,15 @@ public class TurnStateRecognizer {
 
     //  private final int GYRO_NOISE_MARGIN = 10;
     private int TURN_STATE_THRESHOLD;
-    private TurnState currentTurnState = TurnState.Straight;
-    private final long MIN_STRAIGHT_TIME = 85;
 
-    private boolean maybeStraight = false;
+    private final long MIN_STRAIGHT_TIME = 85;
+    private final long MIN_TURN_TIME = 50;
+
+    //private boolean maybeStraight = false; //remove
 
     private History stats = null;
-    private History maybyStraightStats = null;
+    //private History maybyStraightStats = null; //remove
+    private History maybeNewStats = null;
 
     public TurnStateRecognizer(int stateThreshold) {
         TURN_STATE_THRESHOLD = stateThreshold;
@@ -70,31 +82,44 @@ public class TurnStateRecognizer {
     public boolean newInput(double avg) {
         //Right = positive
         stats.currentClockCounter++;
-        if(maybyStraightStats != null) maybyStraightStats.currentClockCounter++;
+        if(maybeNewStats != null) maybeNewStats.currentClockCounter++;
         double absAvg = Math.abs(avg);
         if(absAvg > stats.currentPeakMax) stats.currentPeakMax = absAvg;
-        if(maybyStraightStats != null && absAvg > maybyStraightStats.currentPeakMax) maybyStraightStats.currentPeakMax = absAvg;
+        if(maybeNewStats != null && absAvg > maybeNewStats.currentPeakMax) maybeNewStats.currentPeakMax = absAvg;
 
-        //TurnState sensor = (avg > TURN_STATE_THRESHOLD ? TurnState.Left : (avg < -TURN_STATE_THRESHOLD ? TurnState.Right : TurnState.Straight));
+        TurnState sensor = (avg > TURN_STATE_THRESHOLD ? TurnState.Left : (avg < -TURN_STATE_THRESHOLD ? TurnState.Right : TurnState.Straight));
 
-        //if (sensor != )
-
-        if (avg > TURN_STATE_THRESHOLD) { //Right
-            if(currentTurnState != TurnState.Right) {
-                maybeStraight = false;
-                currentTurnState = TurnState.Right;
-                stats.updateTime(absAvg);
-                return true;
+        if (sensor != stats.currentTurnState) {
+            if (maybeNewStats != null && sensor == maybeNewStats.currentTurnState) {
+                // check if already valid new state
+                if(maybeNewStats.isValidTime()) { // really straight
+                    stats = maybeNewStats;
+                    maybeNewStats = null;
+                    return true;
+                }
+            } else if (maybeNewStats != null && sensor != maybeNewStats.currentTurnState) {
+                maybeNewStats = stats.clone();
+                maybeNewStats.currentTurnState = sensor;
+                maybeNewStats.updateTime(absAvg);
             } else {
+                maybeNewStats = stats.clone();
+                maybeNewStats.currentTurnState = sensor;
+                maybeNewStats.updateTime(absAvg);
             }
-        } else if (avg < -TURN_STATE_THRESHOLD){ //Left
-            if(currentTurnState != TurnState.Left) {
-                maybeStraight = false;
-                currentTurnState = TurnState.Left;
-                stats.updateTime(absAvg);
-                return true;
-            } else {
-            }
+        }
+
+
+/*
+        if (avg > TURN_STATE_THRESHOLD && currentTurnState != TurnState.Right) { //Right
+            maybeStraight = false;
+            stats.currentTurnState = TurnState.Right;
+            stats.updateTime(absAvg);
+            return true;
+        } else if (avg < -TURN_STATE_THRESHOLD && currentTurnState != TurnState.Left){ //Left
+            maybeStraight = false;
+            stats.currentTurnState = TurnState.Left;
+            stats.updateTime(absAvg);
+            return true;
         } else if (Math.abs(avg) <= TURN_STATE_THRESHOLD && currentTurnState != TurnState.Straight){ //Straight
             if(maybeStraight) {
                 // passed more that 85ms from suspect begin.
@@ -102,7 +127,7 @@ public class TurnStateRecognizer {
                     maybeStraight = false;
 
                     // restore deemmy vars to real
-                    currentTurnState = TurnState.Straight;
+                    stats.currentTurnState = TurnState.Straight;
                     stats = maybyStraightStats;
                     maybyStraightStats = null;
                     //stats.updateTime(absAvg);
@@ -115,11 +140,13 @@ public class TurnStateRecognizer {
                 maybeStraight = true;
             }
         }
+        */
+
         return false;
     }
 
     public TurnState getCurrentTurnState(){
-        return currentTurnState;
+        return stats.currentTurnState;
     }
 
     public long getLastStateDuration(){
