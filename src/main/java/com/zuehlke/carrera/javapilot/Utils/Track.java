@@ -50,8 +50,6 @@ public class Track extends Path {
         while(list.size()>wantedSize){
             list.remove(list.size()-1);
         }
-        System.out.println(list.toString());
-        System.out.println(" ");
 
         //find max
         double maxSharpness=0;
@@ -62,11 +60,16 @@ public class Track extends Path {
         if(maxSharpness==0){
             System.out.println("[ERROR] maxSharpness = 0 !!!! check WTF in java file !!!!!");
             return true;
+        } else {
+            System.out.println("maxSharpness = " + maxSharpness);
         }
 
         for (Segment segment: list) {
-            segment.setSharpness(segment.getSharpness()/maxSharpness);
+            segment.setSharpness(1 - segment.getSharpness()/maxSharpness);
         }
+
+        System.out.println(list.toString());
+        System.out.println(" ");
 
         return true;
     }

@@ -40,7 +40,7 @@ public class Segment{
     }
 
     private void recalcMaxPower() {
-        max_power = (int)(power_limit * (1 - 0.5 * sharpness));
+        max_power = (int)(power_limit * (0.5 + 0.5 * sharpness));
     }
 
     public TurnStateRecognizer.TurnState getTurnState() {
@@ -99,6 +99,6 @@ public class Segment{
 
     @Override
     public String toString(){
-        return turnState.toString();
+        return "\n" + turnState.toString() + ":mp=" + this.max_power + ":shrp=" + this.sharpness;
     }
 }
