@@ -89,11 +89,13 @@ public class Segment{
     public void recordNewData(int throttleTime, double velocityD, boolean stopped){
 
         if(!penalized){
-            if(turnState== TurnStateRecognizer.TurnState.Straight){
-                throttleTime+=60;
+            if(turnState == TurnStateRecognizer.TurnState.Straight){
+                throttle_time+=80;
+                System.out.println("########################### STRAIGHT: "+throttle_time);
             } else {
-            throttle_time+=40;
-        } }else {
+            throttle_time+=50;
+                System.out.println("########################### CORNER: "+throttle_time);
+            } }else {
             if(throttle_time<0.75*min_penalized_time){
             throttle_time+=Math.min(25,(min_penalized_time-throttle_time)/2);
         }
