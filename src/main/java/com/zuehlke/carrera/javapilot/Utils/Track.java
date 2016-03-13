@@ -10,6 +10,7 @@ import java.util.List;
 public class Track extends Path {
     private boolean pathIsReady = false;
     private final int MIN_PATH_SIZE = 7;
+    private final int MAX_PATH_SIZE = 25;
     private final int MAX_SEGMENTS = (15*4);
 
     public Track(){
@@ -20,6 +21,13 @@ public class Track extends Path {
         if(!pathIsReady){
             super.addSegment(turnState);
             pathIsReady = checkDoubleCyclicPath();
+        }
+        if (list.size() > MAX_PATH_SIZE*2) {
+            System.out.println("[Info] Cutting the bulshit ---------------------------------------------------------------");
+            System.out.println("before cutting: ");
+            System.out.println(list);
+            list = list.subList(list.size()-MIN_PATH_SIZE*2, list.size());
+            System.out.println(list);
         }
     }
 

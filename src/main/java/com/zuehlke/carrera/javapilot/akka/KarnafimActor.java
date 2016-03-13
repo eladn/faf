@@ -51,7 +51,7 @@ public class KarnafimActor extends UntypedActor {
     private int lastThrottleInterval = 500;
     private double previousVelocity = 0;
 
-    private int optimumSegmentsCount = 0;
+    //private int optimumSegmentsCount = 0; // for debug
 
 
     public static Props props( ActorRef pilotActor, int duration ) {
@@ -65,7 +65,7 @@ public class KarnafimActor extends UntypedActor {
         this.duration = duration;
     }
 
-
+//int buildCounter = 0; // test the BulshitCutter
     @Override
     public void onReceive(Object message) throws Exception {
         switch(stage) {
@@ -75,6 +75,12 @@ public class KarnafimActor extends UntypedActor {
                     stage = LaunchStage.OptimumLaunch;
                     pathRecognizer = new PathRecognizer(track);
                 }
+                // test the BulshitCutter
+                /*if (buildCounter == 11 || buildCounter == 42) { // simulate LOST - REMOVE
+                    buildCounter++;
+                    track.addSegment(TurnStateRecognizer.TurnState.Left);
+                    track.addSegment(TurnStateRecognizer.TurnState.Left);
+                }*/
                 break;
             case OptimumLaunch:
                 onReceive_Optimizer(message);
@@ -135,6 +141,7 @@ public class KarnafimActor extends UntypedActor {
         gyrozHistory.shift(message.getG()[2]); //push to avg history
         double avg = gyrozHistory.currentMean();
         if(turnStateRecognizer.newInput(avg)){
+            //buildCounter++; // cutting the bullshit testing
             if(track.getSegmentsSize()>0){//mikre kaze zain athala
                 track.setLastSegmentSharpness(turnStateRecognizer.getLastPeak());
                 track.setLastSegmentInitDuraion(turnStateRecognizer.getLastStateDuration());
@@ -206,7 +213,7 @@ public class KarnafimActor extends UntypedActor {
             // state changed
             pathRecognizer.setNextState(turnStateRecognizer.getCurrentTurnState());
 
-            optimumSegmentsCount++; // DEBUG - remove
+            //optimumSegmentsCount++; // DEBUG - remove
 
             System.out.println();
             System.out.println(pathRecognizer.toString());
