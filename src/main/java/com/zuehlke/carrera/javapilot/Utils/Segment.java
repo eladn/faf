@@ -11,10 +11,9 @@ public class Segment{
     private static final int init_throttle_time=300;
     private static final int max_penalty_speed=300;
     private static final int min_penalty_speed=200;
-    private static final int MAX_POWER_STRAIGHT=180;
-    private static final int MAX_POWER_CURVE=150;
+    private static final int MAX_POWER_STRAIGHT=175;
+    private static final int MAX_POWER_CURVE=145;
     private int max_power = 150;
-
 
     private int velocity_step=20;
     private int min_penalized_time = Integer.MAX_VALUE;
@@ -90,9 +89,12 @@ public class Segment{
     public void recordNewData(int throttleTime, double velocityD, boolean stopped){
 
         if(!penalized){
-            throttle_time+=75;
-        } else {
-            if(throttle_time<0.8*min_penalized_time){
+            if(turnState== TurnStateRecognizer.TurnState.Straight){
+                throttleTime+=60;
+            } else {
+            throttle_time+=40;
+        } }else {
+            if(throttle_time<0.75*min_penalized_time){
             throttle_time+=Math.min(25,(min_penalized_time-throttle_time)/2);
         }
         }
