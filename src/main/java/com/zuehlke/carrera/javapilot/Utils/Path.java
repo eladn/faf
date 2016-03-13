@@ -29,4 +29,12 @@ public abstract class Path {
         return list.get(i);
     }
 
+    public String toLettersString() {
+        String str = "";
+        for (Segment seg : list) {
+            str += seg.getTurnState().toString();
+        }
+        return str;
+    }
+
 }
