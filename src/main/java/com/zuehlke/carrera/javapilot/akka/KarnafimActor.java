@@ -20,7 +20,7 @@ import org.apache.commons.lang.StringUtils;
  */
 public class KarnafimActor extends UntypedActor {
     public enum LaunchStage {
-        BuildPath, DetectMaxLimits, OptimumLaunch
+        BuildPath, DetectMaxLimits, OptimumLaunch, FindMe
     }
 
     private int TURN_STATE_THRESHOLD = 300;
@@ -51,6 +51,8 @@ public class KarnafimActor extends UntypedActor {
     private int lastThrottleInterval = 500;
     private double previousVelocity = 0;
 
+    private int optimumSegmentsCount = 0;
+
 
     public static Props props( ActorRef pilotActor, int duration ) {
         return Props.create(
@@ -76,8 +78,20 @@ public class KarnafimActor extends UntypedActor {
                 break;
             case OptimumLaunch:
                 onReceive_Optimizer(message);
+                /**if (optimumSegmentsCount == 4) { // simulate LOST - REMOVE
+                    optimumSegmentsCount = 0;
+                    pathRecognizer.setNextState(TurnStateRecognizer.TurnState.Left);
+                    pathRecognizer.setNextState(TurnStateRecognizer.TurnState.Left);
+                }**/
+                if (pathRecognizer.isLost()) stage = LaunchStage.FindMe;
+                break;
+            case FindMe:
+                onReceive_FindMe(message);
+                if (!pathRecognizer.isLost()) stage = LaunchStage.OptimumLaunch;
                 break;
         }
+
+
 
     }
 
@@ -192,7 +206,10 @@ public class KarnafimActor extends UntypedActor {
             // state changed
             pathRecognizer.setNextState(turnStateRecognizer.getCurrentTurnState());
 
-            System.out.print(pathRecognizer.toString());
+            optimumSegmentsCount++; // DEBUG - remove
+
+            System.out.println();
+            System.out.println(pathRecognizer.toString());
             //System.out.println(pathRecognizer.getCurrentStateSegment().getTurnState());
             handleNewSegment(pathRecognizer.getCurrentStateSegment());
 //            System.out.print(turnStateRecognizer.getLastStateDuration());
@@ -235,6 +252,49 @@ public class KarnafimActor extends UntypedActor {
         lastThrottleStart = System.currentTimeMillis();
         lastThrottleInterval = throttle_time;
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////// FindMe Handlers /////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void onReceive_FindMe(Object message) throws Exception {
+        if ( message instanceof SensorEvent ) {
+            handleSensorEvent_FindMe((SensorEvent) message);
+        } else if ( message instanceof PenaltyMessage) {
+            handlePenaltyMessage_FindMe();
+        } else if ( message instanceof RaceStartMessage) {
+            handleRaceStart_FindMe();
+        } else {
+            unhandled(message);
+        }
+    }
+
+    private void handleRaceStart_FindMe() {
+        currentPower = INIT_POWER;
+        lastIncrease = 0;
+        maxPower = 180; // Max for this phase;
+    }
+
+
+    private void handlePenaltyMessage_FindMe() {
+        currentPower -= 10;
+        kobayashi.tell(new PowerAction((int)currentPower), getSelf());
+    }
+
+    private void handleSensorEvent_FindMe(SensorEvent message) {
+        gyrozHistory.shift(message.getG()[2]); //push to avg history
+        double avg = gyrozHistory.currentMean();
+        if(turnStateRecognizer.newInput(avg)){
+            // state changed
+            pathRecognizer.setNextState(turnStateRecognizer.getCurrentTurnState());
+        }
+        kobayashi.tell(new PowerAction((int)INIT_POWER), getSelf());
+        show ((int)gyrozHistory.currentMean());
+    }
+
+
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////// more bullshit //////////////////////////////////////////////////////////////

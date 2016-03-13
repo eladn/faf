@@ -127,6 +127,12 @@ public class Track extends Path {
         return true;
     }
 
+    public void demonstrate(List<TurnStateRecognizer.TurnState> lst) {
+        for(TurnStateRecognizer.TurnState trn : lst) {
+            list.add(new Segment(trn));
+        }
+    }
+
 
     /*
         -1 if not, else returns last common index (in Track)
@@ -136,7 +142,7 @@ public class Track extends Path {
         for(int i=0; i<this.getSegmentsSize(); ++i){
             boolean match = true;
             for(int j=0; j<path.getSegmentsSize(); ++j){
-                if(path.getSegment(j).getTurnState() != this.getSegment(i+j).getTurnState()){
+                if(path.getSegment(j).getTurnState() != this.getSegment((i+j)%this.getSegmentsSize()).getTurnState()){
                     match = false;
                     break;
                 }
@@ -145,7 +151,7 @@ public class Track extends Path {
             if (offset > -1) { // found twice. not only one
                 return -1;
             }
-            offset = ((i + path.getSegmentsSize()) % this.getSegmentsSize());
+            offset = ((i + path.getSegmentsSize() - 1) % this.getSegmentsSize());
         }
 
         return offset;
