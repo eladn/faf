@@ -8,11 +8,11 @@ import org.apache.commons.math3.stat.regression.SimpleRegression;
 public class Segment{
     TurnStateRecognizer.TurnState turnState;
 
-    private static final int init_throttle_time=250;
+    private static final int init_throttle_time=500;
     private static final int max_penalty_speed=300;
     private static final int min_penalty_speed=200;
     private static final int MAX_POWER_STRAIGHT=200;
-    private static final int MAX_POWER_CURVE=140;
+    private static final int MAX_POWER_CURVE=180;
     private int max_power = 150;
 
 
@@ -120,6 +120,10 @@ public class Segment{
             return MAX_POWER_STRAIGHT;
         else
             return MAX_POWER_CURVE;
+    }
+
+    public boolean isPenalized(){
+        return penalized;
     }
 
     public void penalize(PenaltyMessage msg) {

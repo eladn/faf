@@ -24,8 +24,8 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private int TURN_STATE_THRESHOLD = 300;
-    private int FLOATING_HISTORY = 4;
-    private int INIT_POWER = 120;
+    private int FLOATING_HISTORY = 5;
+    private int INIT_POWER = 100;
 
     TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
     Track track = new Track();
@@ -180,7 +180,7 @@ public class KarnafimActor extends UntypedActor {
     }
     boolean isFirst=true;
     private void handleSensorEvent_Optimizer(SensorEvent message) {
-        show2 ((int)gyrozHistory.currentMean(), (int)gyrozHistory.currentStDev());
+        //show2 ((int)gyrozHistory.currentMean(), (int)gyrozHistory.currentStDev());
 
         if(isFirst){
             handleNewSegment(pathRecognizer.getCurrentStateSegment());
@@ -192,8 +192,8 @@ public class KarnafimActor extends UntypedActor {
             // state changed
             pathRecognizer.setNextState(turnStateRecognizer.getCurrentTurnState());
 
-            System.out.println(pathRecognizer.toString());
-            System.out.println(pathRecognizer.getCurrentStateSegment().getTurnState());
+            System.out.print(pathRecognizer.toString());
+            //System.out.println(pathRecognizer.getCurrentStateSegment().getTurnState());
             handleNewSegment(pathRecognizer.getCurrentStateSegment());
 //            System.out.print(turnStateRecognizer.getLastStateDuration());
 //            System.out.print(turnStateRecognizer.getCurrentTurnState() + " ---------------------------------------------------=============--------------------------------------------------------");
@@ -208,6 +208,7 @@ public class KarnafimActor extends UntypedActor {
             lastThrottleInterval=1250;
             stopped=true;
         }
+        show ((int)gyrozHistory.currentMean());
     }
 
 
@@ -216,8 +217,8 @@ public class KarnafimActor extends UntypedActor {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void handleNewSegment(Segment seg) {
-        System.out.println("TOP_SPEED:\t"+seg.getTopSpeed()+"     TARGET_SPEED:\t"+seg.getTargetSpeed());
-        System.out.println("STEP:\t"+seg.getStep());
+        //System.out.println("TYPE:\t"+seg.getTurnState()+"\tPENALIZED:\t"+seg.isPenalized()+"\tTOP_SPEED:\t"+seg.getTopSpeed()+"\tTARGET_SPEED:\t"+seg.getTargetSpeed());
+        //System.out.println("STEP:\t"+seg.getStep());
 
         if (oldest_unclosed == null) {
             oldest_unclosed = seg;
