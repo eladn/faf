@@ -24,8 +24,8 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private int TURN_STATE_THRESHOLD = 300;
-    private int FLOATING_HISTORY = 1;
-    private int INIT_POWER = 100;
+    private int FLOATING_HISTORY = 5;
+    private int INIT_POWER = 105;
 
     TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
     Track track = new Track();
@@ -216,7 +216,7 @@ public class KarnafimActor extends UntypedActor {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void handleNewSegment(Segment seg) {
-        System.out.println("TOP_SPEED:\t"+seg.getTopSpeed()+"     TARGET_SPEED:\t"+seg.getTargetSpeed());
+        System.out.println("TYPE:\t"+seg.getTurnState()+"\tPENALIZED:\t"+seg.isPenalized()+"\tTOP_SPEED:\t"+seg.getTopSpeed()+"\tTARGET_SPEED:\t"+seg.getTargetSpeed());
         System.out.println("STEP:\t"+seg.getStep());
 
         if (oldest_unclosed == null) {
