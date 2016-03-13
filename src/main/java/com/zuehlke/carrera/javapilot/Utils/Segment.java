@@ -11,8 +11,8 @@ public class Segment{
     private static final int init_throttle_time=300;
     private static final int max_penalty_speed=300;
     private static final int min_penalty_speed=200;
-    private static final int MAX_POWER_STRAIGHT=175;
-    private static final int MAX_POWER_CURVE=145;
+    private static final int MAX_POWER_STRAIGHT=180;
+    private static final int MAX_POWER_CURVE=150;
     private int max_power = 150;
 
     private int velocity_step=20;
