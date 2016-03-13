@@ -10,6 +10,7 @@ import java.util.List;
 public class Track extends Path {
     private boolean pathIsReady = false;
     private final int MIN_PATH_SIZE = 7;
+    private final int MAX_SEGMENTS = (15*4);
 
     public Track(){
         super();
@@ -48,9 +49,32 @@ public class Track extends Path {
         System.out.println(this.toString());
         System.out.println("");
 
-        if(list.size()<(MIN_PATH_SIZE*2) || list.size()%2 != 0){
+        if(list.size()<(MIN_PATH_SIZE*2) || list.size()%2 != 0){  // remove second condition if using multi role.
             return false;
         }
+
+
+        /*boolean match = false;
+        int listLen = list.size();
+        for (int partitions = 2; !match && partitions <= 5; partitions++) {
+            if (listLen%partitions != 0) continue;
+            int partitionLength = listLen / partitions;
+            if (partitionLength < MIN_PATH_SIZE) break;
+            int lastPartitionStart = partitionLength * (partitions-1);
+            for (int start1 = 0; start1 < lastPartitionStart; start1+=partitionLength) {
+                if (checkSameInRanges(start1, lastPartitionStart, partitionLength)) {
+                    // match found
+                    match = true;
+                    List<Segment> newList = new ArrayList<Segment>();
+                    for (int i = start1; i < start1+partitionLength; i++) {
+                        newList.add(this.list.get(i));
+                    }
+                    this.list = newList;
+                    break;
+                }
+            }
+        }
+        if (!match) return false;*/
 
 
         for(int i=0; i<list.size()/2; ++i){
@@ -60,8 +84,6 @@ public class Track extends Path {
                 return false;
             }
         }
-
-
         //cut
         int wantedSize = list.size()/2;
         while(list.size()>wantedSize){
@@ -91,6 +113,20 @@ public class Track extends Path {
 
         return true;
     }
+
+    public boolean checkSameInRanges(int start1, int start2, int len) {
+        if (start1+len-1 >= list.size()) return false;
+        if (start2+len-1 >= list.size()) return false;
+        for (int i = 0; i < len; ++i) {
+            Segment first = list.get(start1+i);
+            Segment second = list.get(start2+i);
+            if (first.getTurnState() != second.getTurnState()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     /*
         -1 if not, else returns last common index (in Track)

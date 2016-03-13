@@ -24,8 +24,8 @@ public class KarnafimActor extends UntypedActor {
     }
 
     private int TURN_STATE_THRESHOLD = 300;
-    private int FLOATING_HISTORY = 1;
-    private int INIT_POWER = 100;
+    private int FLOATING_HISTORY = 4;
+    private int INIT_POWER = 120;
 
     TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
     Track track = new Track();
