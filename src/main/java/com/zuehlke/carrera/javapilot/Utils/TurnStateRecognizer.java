@@ -68,8 +68,8 @@ public class TurnStateRecognizer {
     private final long MIN_STRAIGHT_TIME = 85;
     private final long MIN_TURN_TIME = 50;
 
-    private final long MIN_STRAIGHT_CLOCKS = 7;
-    private final long MIN_TURN_CLOCKS = 3;
+    private final long MIN_STRAIGHT_CLOCKS = 4;
+    private final long MIN_TURN_CLOCKS = 4;
 
     //private boolean maybeStraight = false; //remove
 

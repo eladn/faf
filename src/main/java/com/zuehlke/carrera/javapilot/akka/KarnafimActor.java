@@ -25,7 +25,7 @@ public class KarnafimActor extends UntypedActor {
 
     private int TURN_STATE_THRESHOLD = 300;
     private int FLOATING_HISTORY = 5;
-    private int INIT_POWER = 100;
+    private int INIT_POWER = 105;
 
     TurnStateRecognizer turnStateRecognizer = new TurnStateRecognizer(TURN_STATE_THRESHOLD);
     Track track = new Track();
@@ -35,9 +35,9 @@ public class KarnafimActor extends UntypedActor {
     private LaunchStage stage = LaunchStage.BuildPath;
 
 
-    private double brakepower = 95;
-    private double fullThrottle = 150;
-    private int maxPower = 150; // Max for this phase;
+    private double brakepower = 110;
+    private double fullThrottle = 160;
+    private int maxPower = 180; // Max for this phase;
 
 
     private Segment oldest_unclosed = null;

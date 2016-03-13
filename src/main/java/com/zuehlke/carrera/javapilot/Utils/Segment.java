@@ -8,11 +8,11 @@ import org.apache.commons.math3.stat.regression.SimpleRegression;
 public class Segment{
     TurnStateRecognizer.TurnState turnState;
 
-    private static final int init_throttle_time=500;
+    private static final int init_throttle_time=300;
     private static final int max_penalty_speed=300;
     private static final int min_penalty_speed=200;
-    private static final int MAX_POWER_STRAIGHT=200;
-    private static final int MAX_POWER_CURVE=180;
+    private static final int MAX_POWER_STRAIGHT=180;
+    private static final int MAX_POWER_CURVE=150;
     private int max_power = 150;
 
 
@@ -90,10 +90,10 @@ public class Segment{
     public void recordNewData(int throttleTime, double velocityD, boolean stopped){
 
         if(!penalized){
-            throttle_time+=100;
+            throttle_time+=75;
         } else {
-            if(throttle_time<0.7*min_penalized_time){
-            throttle_time+=Math.min(25,(min_penalized_time-throttle_time)/4);
+            if(throttle_time<0.8*min_penalized_time){
+            throttle_time+=Math.min(25,(min_penalized_time-throttle_time)/2);
         }
         }
 
@@ -134,9 +134,9 @@ public class Segment{
         top_speed = target_speed;
         min_penalized_time=throttle_time;
         if(turnState == TurnStateRecognizer.TurnState.Straight)
-            throttle_time-=Math.min(throttle_time,(msg.getActualSpeed()-msg.getSpeedLimit())*10);
+            throttle_time=(int)(0.7*throttle_time);
         else
-            throttle_time-=Math.min(throttle_time,(msg.getActualSpeed()-msg.getSpeedLimit())*20);
+            throttle_time=(int)(0.7*throttle_time);
 
     }
 
